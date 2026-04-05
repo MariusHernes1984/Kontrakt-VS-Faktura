@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header" style="display: flex; justify-content: space-between; align-items: center;">
+    <div>
+        <h2>{{ kontrakt.leverandor_navn }}</h2>
+        <p>Kontrakt {{ kontrakt.kontrakt_nummer or '-' }}</p>
+    </div>
+    <div style="display: flex; gap: 0.75rem;">
+        {% if kontrakt.fil_path %}
+        <a href="{{ url_for('last_ned_kontrakt_pdf', kontrakt_id=kontrakt.id) }}" target="_blank" class="btn btn-primary">Apne kontrakt-PDF</a>
+        {% endif %}
+        <a href="{{ url_for('kontrakter_liste') }}" class="btn" style="background: var(--gray-100);">Tilbake</a>
+    </div>
+</div>
+
+<!-- Status banner -->
+{% set today = "2026-04-05" %}
+{% if kontrakt.sluttdato and kontrakt.sluttdato < today %}
+<div class="flash flash-error">Denne kontrakten har utlopt ({{ kontrakt.sluttdato }})</div>
+{% elif kontrakt.sluttdato %}
+<div class="flash flash-success">Aktiv kontrakt - utloper {{ kontrakt.sluttdato }}</div>
+{% endif %}
+
+<!-- Oversikt -->
+<div class="card">
+    <h3>Kontraktsoversikt</h3>
+    <div class="detail-grid">
+        <div class="detail-item">
+            <div class="detail-label">Leverandor</div>
+            <div class="detail-value">{{ kontrakt.leverandor_navn }}</div>
+        </div>
+        <div class="detail-item">
+            <div class="detail-label">Kontraktnummer</div>
+            <div class="detail-value">{{ kontrakt.kontrakt_nummer or '-' }}</div>
+        </div>
+        <div class="detail-item">
+            <div class="detail-label">Prosjekt-ID</div>
+            <div class="detail-value">{{ kontrakt.prosjekt_id or '-' }}</div>
+        </div>
+        <div class="detail-item">
+            <div class="detail-label">Valuta</div>
+            <div class="detail-value">{{ kontrakt.valuta or 'NOK' }}</div>
+        </div>
+    </div>
+</div>
+
+<!-- Priser og betingelser -->
+<div class="card">
+    <h3>Priser og betingelser</h3>
+    <div class="detail-grid">
+        <div class="detail-item">
+            <div class="detail-label">Timepris</div>
+            <div class="detail-value" style="font-size: 1.25rem; color: var(--primary);">
+                {{ "%.2f"|format(kontrakt.timepris) if kontrakt.timepris else '-' }} {{ kontrakt.valuta or 'NOK' }}
+            </div>
+        </div>
+        <div class="detail-item">
+            <div class="detail-label">Maks timer per maned</div>
+            <div class="detail-value">{{ kontrakt.maks_timer_per_maaned or '-' }} timer</div>
+        </div>
+        <div class="detail-item">
+            <div class="detail-label">Avtalt rabatt</div>
+            <div class="detail-value">{{ kontrakt.avtalt_rabatt_prosent or 0 }}%</div>
+        </div>
+        <div class="detail-item">
+            <div class="detail-label">Maks manedlig belop</div>
+            <div class="detail-value">
+                {% if kontrakt.timepris and kontrakt.maks_timer_per_maaned %}
+                    {% set maks = kontrakt.timepris * kontrakt.maks_timer_per_maaned * (1 - (kontrakt.avtalt_rabatt_prosent or 0) / 100) %}
+                    {{ "{:,.0f}".format(maks) }} {{ kontrakt.valuta or 'NOK' }}
+                {% else %}
+                    -
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- SLA -->
+<div class="card">
+    <h3>SLA / Tjenesteniva</h3>
+    <div class="detail-grid">
+        <div class="detail-item">
+            <div class="detail-label">Responstid</div>
+            <div class="detail-value">{{ kontrakt.sla_responstid_timer or '-' }} timer</div>
+        </div>
+        <div class="detail-item">
+            <div class="detail-label">Eskaleringstid (kritisk)</div>
+            <div class="detail-value">
+                {% if kontrakt.sla_responstid_timer %}
+                    {{ [1, kontrakt.sla_responstid_timer // 2]|max }} timer
+                {% else %}
+                    -
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Kontraktsperiode -->
+<div class="card">
+    <h3>Kontraktsperiode</h3>
+    <div class="detail-grid">
+        <div class="detail-item">
+            <div class="detail-label">Startdato</div>
+            <div class="detail-value">{{ kontrakt.startdato or '-' }}</div>
+        </div>
+        <div class="detail-item">
+            <div class="detail-label">Sluttdato</div>
+            <div class="detail-value">{{ kontrakt.sluttdato or '-' }}</div>
+        </div>
+        <div class="detail-item">
+            <div class="detail-label">Opprettet i systemet</div>
+            <div class="detail-value">{{ kontrakt.opprettet[:10] if kontrakt.opprettet else '-' }}</div>
+        </div>
+    </div>
+</div>
+
+<!-- Beskrivelse -->
+{% if kontrakt.beskrivelse %}
+<div class="card">
+    <h3>Beskrivelse</h3>
+    <p style="color: var(--gray-700); line-height: 1.7;">{{ kontrakt.beskrivelse }}</p>
+</div>
+{% endif %}
+
+<!-- PDF embed -->
+{% if kontrakt.fil_path %}
+<div class="card">
+    <h3>Kontraktsdokument</h3>
+    <iframe src="{{ url_for('last_ned_kontrakt_pdf', kontrakt_id=kontrakt.id) }}"
+            style="width: 100%; height: 600px; border: 1px solid var(--gray-200); border-radius: 8px;">
+    </iframe>
+</div>
+{% endif %}
+
+<!-- Handlinger -->
+<div style="margin-top: 1rem; display: flex; gap: 0.75rem;">
+    {% if kontrakt.fil_path %}
+    <a href="{{ url_for('last_ned_kontrakt_pdf', kontrakt_id=kontrakt.id) }}" target="_blank" class="btn btn-primary">Apne PDF i ny fane</a>
+    {% endif %}
+    <form method="POST" action="{{ url_for('slett_kontrakt_route', kontrakt_id=kontrakt.id) }}"
+          onsubmit="return confirm('Er du sikker pa at du vil slette denne kontrakten?')">
+        <button type="submit" class="btn btn-danger">Slett kontrakt</button>
+    </form>
+</div>
+{% endblock %}

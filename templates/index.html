@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header">
+    <h2>Dashboard</h2>
+    <p>Oversikt over fakturakontroll mot kontrakter</p>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-value">{{ statistikk.antall_kontrakter }}</div>
+        <div class="stat-label">Aktive kontrakter</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-value">{{ statistikk.antall_fakturaer }}</div>
+        <div class="stat-label">Behandlede fakturaer</div>
+    </div>
+    <div class="stat-card danger">
+        <div class="stat-value">{{ statistikk.antall_avvik }}</div>
+        <div class="stat-label">Avvik funnet</div>
+    </div>
+    <div class="stat-card success">
+        <div class="stat-value">{{ statistikk.antall_godkjent }}</div>
+        <div class="stat-label">Godkjent</div>
+    </div>
+</div>
+
+<div class="card">
+    <h3>Siste fakturaer</h3>
+    {% if fakturaer %}
+    <table>
+        <thead>
+            <tr>
+                <th>Dato</th>
+                <th>Leverandor</th>
+                <th>Fakturanr</th>
+                <th>Belop</th>
+                <th>Status</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for f in fakturaer[:10] %}
+            <tr>
+                <td>{{ f.faktura_dato or f.analysert[:10] }}</td>
+                <td>{{ f.leverandor_navn or '-' }}</td>
+                <td>{{ f.faktura_nummer or '-' }}</td>
+                <td>{{ "%.2f"|format(f.total_belop) if f.total_belop else '-' }} NOK</td>
+                <td>
+                    {% if f.status == 'GODKJENT' %}
+                        <span class="badge badge-success">Godkjent</span>
+                    {% elif f.status == 'AVVIK FUNNET' %}
+                        <span class="badge badge-danger">Avvik</span>
+                    {% elif f.status == 'ADVARSEL' %}
+                        <span class="badge badge-warning">Advarsel</span>
+                    {% else %}
+                        <span class="badge badge-info">{{ f.status }}</span>
+                    {% endif %}
+                </td>
+                <td><a href="{{ url_for('vis_resultat', faktura_id=f.id) }}" class="btn btn-sm btn-primary">Se detaljer</a></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-icon">&#128196;</div>
+        <p>Ingen fakturaer behandlet enda.</p>
+        <a href="{{ url_for('last_opp_faktura') }}" class="btn btn-primary" style="margin-top: 1rem;">Last opp din forste faktura</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header">
+    <h2>Historikk</h2>
+    <p>Oversikt over alle behandlede fakturaer</p>
+</div>
+
+<div class="card">
+    {% if fakturaer %}
+    <table>
+        <thead>
+            <tr>
+                <th>Analysert</th>
+                <th>Fil</th>
+                <th>Leverandor</th>
+                <th>Fakturanr</th>
+                <th>Prosjekt</th>
+                <th>Belop</th>
+                <th>Status</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for f in fakturaer %}
+            <tr>
+                <td>{{ f.analysert[:16] if f.analysert else '-' }}</td>
+                <td>{{ f.filnavn }}</td>
+                <td>{{ f.leverandor_navn or '-' }}</td>
+                <td>{{ f.faktura_nummer or '-' }}</td>
+                <td>{{ f.prosjekt_id or '-' }}</td>
+                <td>{{ "%.2f"|format(f.total_belop) if f.total_belop else '-' }} NOK</td>
+                <td>
+                    {% if f.status == 'GODKJENT' %}
+                        <span class="badge badge-success">Godkjent</span>
+                    {% elif f.status == 'AVVIK FUNNET' %}
+                        <span class="badge badge-danger">Avvik</span>
+                    {% elif f.status == 'ADVARSEL' %}
+                        <span class="badge badge-warning">Advarsel</span>
+                    {% elif f.status == 'INGEN KONTRAKT FUNNET' %}
+                        <span class="badge badge-info">Ingen kontrakt</span>
+                    {% else %}
+                        <span class="badge badge-info">{{ f.status }}</span>
+                    {% endif %}
+                </td>
+                <td><a href="{{ url_for('vis_resultat', faktura_id=f.id) }}" class="btn btn-sm btn-primary">Detaljer</a></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-icon">&#128196;</div>
+        <p>Ingen fakturaer behandlet enda.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

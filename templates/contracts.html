@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header" style="display: flex; justify-content: space-between; align-items: center;">
+    <div>
+        <h2>Kontrakter</h2>
+        <p>Administrer leverandorkontrakter</p>
+    </div>
+    <a href="{{ url_for('ny_kontrakt') }}" class="btn btn-primary">+ Ny kontrakt</a>
+</div>
+
+<div class="card">
+    {% if kontrakter %}
+    <table>
+        <thead>
+            <tr>
+                <th>Leverandor</th>
+                <th>Kontrakt nr</th>
+                <th>Prosjekt-ID</th>
+                <th>Timepris</th>
+                <th>Maks timer/mnd</th>
+                <th>Periode</th>
+                <th>Status</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% set today = "2026-04-05" %}
+            {% for k in kontrakter %}
+            <tr style="cursor: pointer;" onclick="window.location='{{ url_for('vis_kontrakt', kontrakt_id=k.id) }}'">
+                <td><strong>{{ k.leverandor_navn }}</strong></td>
+                <td>{{ k.kontrakt_nummer or '-' }}</td>
+                <td>{{ k.prosjekt_id or '-' }}</td>
+                <td>{{ "%.2f"|format(k.timepris) if k.timepris else '-' }} NOK</td>
+                <td>{{ k.maks_timer_per_maaned or '-' }}</td>
+                <td>
+                    {% if k.startdato and k.sluttdato %}
+                        {{ k.startdato }} - {{ k.sluttdato }}
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+                <td>
+                    {% if k.sluttdato and k.sluttdato < today %}
+                        <span class="badge badge-danger">Utlopt</span>
+                    {% elif k.fil_path %}
+                        <span class="badge badge-success">Aktiv</span>
+                    {% else %}
+                        <span class="badge badge-info">Aktiv</span>
+                    {% endif %}
+                </td>
+                <td onclick="event.stopPropagation();" style="display: flex; gap: 0.5rem;">
+                    <a href="{{ url_for('vis_kontrakt', kontrakt_id=k.id) }}" class="btn btn-sm btn-primary">Apne</a>
+                    <form method="POST" action="{{ url_for('slett_kontrakt_route', kontrakt_id=k.id) }}"
+                          onsubmit="return confirm('Er du sikker pa at du vil slette denne kontrakten?')">
+                        <button type="submit" class="btn btn-sm btn-danger">Slett</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-icon">&#128203;</div>
+        <p>Ingen kontrakter registrert enda.</p>
+        <a href="{{ url_for('ny_kontrakt') }}" class="btn btn-primary" style="margin-top: 1rem;">Opprett din forste kontrakt</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

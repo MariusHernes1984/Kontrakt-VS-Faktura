@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header">
+    <h2>Last opp faktura</h2>
+    <p>Last opp en faktura i PDF-format for automatisk kontroll mot kontrakt</p>
+</div>
+
+<div class="card">
+    <form method="POST" enctype="multipart/form-data" id="uploadForm">
+        <div class="upload-area" id="dropZone" onclick="document.getElementById('fakturaInput').click()">
+            <div class="upload-icon">&#128195;</div>
+            <p><strong>Klikk her eller dra og slipp</strong></p>
+            <p>PDF-filer opp til 16 MB</p>
+            <p id="fileName" style="margin-top: 1rem; font-weight: 600; color: var(--primary);"></p>
+        </div>
+        <input type="file" name="faktura" id="fakturaInput" accept=".pdf"
+               style="display: none;" onchange="visFilnavn(this)">
+
+        <div style="margin-top: 1.5rem; text-align: center;">
+            <button type="submit" class="btn btn-primary" id="submitBtn" disabled>
+                Analyser faktura
+            </button>
+        </div>
+    </form>
+</div>
+
+<div class="card">
+    <h3>Slik fungerer det</h3>
+    <div class="detail-grid">
+        <div class="detail-item">
+            <div class="detail-label">Steg 1</div>
+            <div class="detail-value">Last opp PDF</div>
+            <p style="font-size: 0.85rem; color: var(--gray-500); margin-top: 0.25rem;">
+                Last opp fakturaen i PDF-format
+            </p>
+        </div>
+        <div class="detail-item">
+            <div class="detail-label">Steg 2</div>
+            <div class="detail-value">AI-analyse</div>
+            <p style="font-size: 0.85rem; color: var(--gray-500); margin-top: 0.25rem;">
+                GPT analyserer og ekstraherer data fra fakturaen
+            </p>
+        </div>
+        <div class="detail-item">
+            <div class="detail-label">Steg 3</div>
+            <div class="detail-value">Kontraktssjekk</div>
+            <p style="font-size: 0.85rem; color: var(--gray-500); margin-top: 0.25rem;">
+                Systemet finner matching kontrakt og sammenligner
+            </p>
+        </div>
+        <div class="detail-item">
+            <div class="detail-label">Steg 4</div>
+            <div class="detail-value">Avviksrapport</div>
+            <p style="font-size: 0.85rem; color: var(--gray-500); margin-top: 0.25rem;">
+                Du far en detaljert rapport over eventuelle avvik
+            </p>
+        </div>
+    </div>
+</div>
+
+<script>
+function visFilnavn(input) {
+    const btn = document.getElementById('submitBtn');
+    const nameEl = document.getElementById('fileName');
+    if (input.files.length > 0) {
+        nameEl.textContent = input.files[0].name;
+        btn.disabled = false;
+    }
+}
+
+const dropZone = document.getElementById('dropZone');
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.style.borderColor = 'var(--primary)'; });
+dropZone.addEventListener('dragleave', e => { dropZone.style.borderColor = 'var(--gray-300)'; });
+dropZone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropZone.style.borderColor = 'var(--gray-300)';
+    const input = document.getElementById('fakturaInput');
+    input.files = e.dataTransfer.files;
+    visFilnavn(input);
+});
+
+document.getElementById('uploadForm').addEventListener('submit', function() {
+    document.getElementById('submitBtn').textContent = 'Analyserer...';
+    document.getElementById('submitBtn').disabled = true;
+});
+</script>
+{% endblock %}

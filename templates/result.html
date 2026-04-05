@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header">
+    <h2>Analyseresultat</h2>
+    <p>Faktura {{ faktura.faktura_nummer or faktura.filnavn }}</p>
+</div>
+
+<!-- Status header -->
+{% if rapport.status == 'GODKJENT' %}
+<div class="result-header godkjent">
+    <div class="result-icon">&#9989;</div>
+    <h2>Godkjent</h2>
+    <p>Fakturaen stemmer overens med kontrakten</p>
+</div>
+{% elif rapport.status == 'AVVIK FUNNET' %}
+<div class="result-header avvik">
+    <div class="result-icon">&#10060;</div>
+    <h2>Avvik funnet</h2>
+    <p>{{ rapport.oppsummering.antall_avvik }} avvik oppdaget - krever manuell vurdering</p>
+</div>
+{% elif rapport.status == 'ADVARSEL' %}
+<div class="result-header advarsel">
+    <div class="result-icon">&#9888;&#65039;</div>
+    <h2>Advarsel</h2>
+    <p>{{ rapport.oppsummering.antall_advarsler }} advarsler - bor sjekkes</p>
+</div>
+{% elif rapport.status == 'INGEN KONTRAKT FUNNET' %}
+<div class="result-header ingen">
+    <div class="result-icon">&#128269;</div>
+    <h2>Ingen kontrakt funnet</h2>
+    <p>{{ rapport.beskrivelse }}</p>
+</div>
+{% endif %}
+
+<!-- Faktura detaljer -->
+<div class="card">
+    <h3>Fakturadetaljer (ekstrahert av AI)</h3>
+    <div class="detail-grid">
+        <div class="detail-item">
+            <div class="detail-label">Leverandor</div>
+            <div class="detail-value">{{ faktura.leverandor_navn or '-' }}</div>
+        </div>
+        <div class="detail-item">
+            <div class="detail-label">Fakturanummer</div>
+            <div class="detail-value">{{ faktura.faktura_nummer or '-' }}</div>
+        </div>
+        <div class="detail-item">
+            <div class="detail-label">Prosjekt-ID</div>
+            <div class="detail-value">{{ faktura.prosjekt_id or '-' }}</div>
+        </div>
+        <div class="detail-item">
+            <div class="detail-label">Fakturadato</div>
+            <div class="detail-value">{{ faktura.faktura_dato or '-' }}</div>
+        </div>
+        <div class="detail-item">
+            <div class="detail-label">Forfallsdato</div>
+            <div class="detail-value">{{ faktura.forfallsdato or '-' }}</div>
+        </div>
+        <div class="detail-item">
+            <div class="detail-label">Totalbelop</div>
+            <div class="detail-value">{{ "%.2f"|format(faktura.total_belop) if faktura.total_belop else '-' }} NOK</div>
+        </div>
+        <div class="detail-item">
+            <div class="detail-label">Timepris</div>
+            <div class="detail-value">{{ "%.2f"|format(faktura.timepris) if faktura.timepris else '-' }} NOK</div>
+        </div>
+        <div class="detail-item">
+            <div class="detail-label">Antall timer</div>
+            <div class="detail-value">{{ faktura.antall_timer if faktura.antall_timer else '-' }}</div>
+        </div>
+    </div>
+</div>
+
+<!-- Kontrakt info -->
+{% if rapport.kontrakt_nummer %}
+<div class="card">
+    <h3>Matchet kontrakt: {{ rapport.kontrakt_nummer }}</h3>
+    <p style="color: var(--gray-500); font-size: 0.9rem;">
+        Leverandor: {{ faktura.kontrakt_leverandor or '-' }}
+    </p>
+</div>
+{% endif %}
+
+<!-- Validerings detaljer -->
+{% if rapport.avvik or rapport.advarsler or rapport.ok %}
+<div class="card">
+    <h3>Valideringsresultat</h3>
+
+    {% if rapport.avvik %}
+    <div class="validation-section">
+        <h4 style="color: var(--danger); margin-bottom: 0.75rem;">Avvik</h4>
+        {% for item in rapport.avvik %}
+        <div class="validation-item avvik">
+            <div class="item-icon">&#10060;</div>
+            <div class="item-content">
+                <div class="item-field">{{ item.felt }}</div>
+                <div class="item-values">
+                    Faktura: <strong>{{ item.faktura_verdi }}</strong> |
+                    Kontrakt: <strong>{{ item.kontrakt_verdi }}</strong>
+                    {% if item.differanse %} | Differanse: <strong>{{ item.differanse }}</strong>{% endif %}
+                </div>
+                <div class="item-desc">{{ item.beskrivelse }}</div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if rapport.advarsler %}
+    <div class="validation-section">
+        <h4 style="color: var(--warning); margin-bottom: 0.75rem;">Advarsler</h4>
+        {% for item in rapport.advarsler %}
+        <div class="validation-item advarsel">
+            <div class="item-icon">&#9888;&#65039;</div>
+            <div class="item-content">
+                <div class="item-field">{{ item.felt }}</div>
+                {% if item.faktura_verdi %}
+                <div class="item-values">
+                    Faktura: <strong>{{ item.faktura_verdi }}</strong> |
+                    Kontrakt: <strong>{{ item.kontrakt_verdi }}</strong>
+                </div>
+                {% endif %}
+                <div class="item-desc">{{ item.beskrivelse }}</div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if rapport.ok %}
+    <div class="validation-section">
+        <h4 style="color: var(--success); margin-bottom: 0.75rem;">Godkjent</h4>
+        {% for item in rapport.ok %}
+        <div class="validation-item ok">
+            <div class="item-icon">&#9989;</div>
+            <div class="item-content">
+                <div class="item-field">{{ item.felt }}</div>
+                <div class="item-values">
+                    Faktura: <strong>{{ item.faktura_verdi }}</strong> |
+                    Kontrakt: <strong>{{ item.kontrakt_verdi }}</strong>
+                </div>
+                <div class="item-desc">{{ item.beskrivelse }}</div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+{% endif %}
+
+<div style="margin-top: 1rem; display: flex; gap: 1rem;">
+    <a href="{{ url_for('last_opp_faktura') }}" class="btn btn-primary">Last opp ny faktura</a>
+    <a href="{{ url_for('dashboard') }}" class="btn" style="background: var(--gray-100);">Tilbake til dashboard</a>
+</div>
+{% endblock %}
