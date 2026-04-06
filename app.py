@@ -7,7 +7,8 @@ from flask import (
 from werkzeug.utils import secure_filename
 from database import (
     init_db, opprett_kontrakt, hent_alle_kontrakter, hent_kontrakt,
-    slett_kontrakt, lagre_faktura_logg, hent_faktura_logg, hent_faktura
+    slett_kontrakt, lagre_faktura_logg, hent_faktura_logg, hent_faktura,
+    slett_faktura
 )
 from analyzer import analyser_faktura
 from validator import finn_og_valider
@@ -170,6 +171,13 @@ def vis_resultat(faktura_id):
 def historikk():
     fakturaer = hent_faktura_logg()
     return render_template("history.html", fakturaer=fakturaer)
+
+
+@app.route("/faktura/<int:faktura_id>/slett", methods=["POST"])
+def slett_faktura_route(faktura_id):
+    slett_faktura(faktura_id)
+    flash("Faktura slettet.", "info")
+    return redirect(request.referrer or url_for("dashboard"))
 
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)

@@ -42,7 +42,13 @@
                         <span class="badge badge-info">{{ f.status }}</span>
                     {% endif %}
                 </td>
-                <td><a href="{{ url_for('vis_resultat', faktura_id=f.id) }}" class="btn btn-sm btn-primary">Detaljer</a></td>
+                <td style="display: flex; gap: 0.5rem;">
+                    <a href="{{ url_for('vis_resultat', faktura_id=f.id) }}" class="btn btn-sm btn-primary">Detaljer</a>
+                    <form method="POST" action="{{ url_for('slett_faktura_route', faktura_id=f.id) }}"
+                          onsubmit="return confirm('Slette denne fakturaen?')">
+                        <button type="submit" class="btn btn-sm btn-danger">Slett</button>
+                    </form>
+                </td>
             </tr>
             {% endfor %}
         </tbody>

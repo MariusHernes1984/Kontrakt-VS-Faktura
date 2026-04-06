@@ -1,7 +1,7 @@
 import os
 import json
 import base64
-from openai import OpenAI
+from openai import AzureOpenAI
 from PyPDF2 import PdfReader
 from dotenv import load_dotenv
 
@@ -14,12 +14,17 @@ def _get_client():
     global _client
     if _client is None:
         api_key = os.getenv("OPENAI_API_KEY")
+        endpoint = os.getenv("AZURE_OPENAI_ENDPOINT")
         if not api_key:
             raise RuntimeError(
                 "OPENAI_API_KEY er ikke satt. "
                 "Opprett en .env-fil med din API-nokkel."
             )
-        _client = OpenAI(api_key=api_key)
+        _client = AzureOpenAI(
+            api_key=api_key,
+            azure_endpoint=endpoint,
+            api_version="2024-12-01-preview",
+        )
     return _client
 
 EXTRACTION_PROMPT = """Du er en ekspert på å analysere norske fakturaer.
@@ -77,12 +82,11 @@ def analyser_faktura(pdf_path):
 
     try:
         response = _get_client().chat.completions.create(
-            model="gpt-4.1",
+            model="gpt-5.3-chat",
             messages=[
                 {"role": "system", "content": EXTRACTION_PROMPT},
                 {"role": "user", "content": f"Analyser denne fakturaen:\n\n{tekst}"},
             ],
-            temperature=0.1,
             response_format={"type": "json_object"},
         )
 

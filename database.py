@@ -196,3 +196,10 @@ def hent_faktura(faktura_id):
     """, (faktura_id,)).fetchone()
     conn.close()
     return dict(row) if row else None
+
+
+def slett_faktura(faktura_id):
+    conn = get_db()
+    conn.execute("DELETE FROM faktura_logg WHERE id = ?", (faktura_id,))
+    conn.commit()
+    conn.close()
