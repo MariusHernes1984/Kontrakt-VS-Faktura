@@ -1,15 +1,11 @@
-"""Sender avviksvarsling via SMTP (Outlook/M365)."""
+"""Sender avviksvarsling via Azure Communication Services Email."""
 import os
-import smtplib
+import base64
 import logging
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
-from email.mime.application import MIMEApplication
+from azure.communication.email import EmailClient
 
-SMTP_SERVER = os.getenv("SMTP_SERVER", "smtp.office365.com")
-SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
-SMTP_BRUKERNAVN = os.getenv("SMTP_BRUKERNAVN", "")
-SMTP_PASSORD = os.getenv("SMTP_PASSORD", "")
+ACS_CONNECTION_STRING = os.getenv("ACS_CONNECTION_STRING", "")
+ACS_SENDER_EMAIL = os.getenv("ACS_SENDER_EMAIL", "DoNotReply@3e6e33cf-4734-454a-b2af-1f01b3fd4272.azurecomm.net")
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +18,6 @@ def _bygg_html_innhold(faktura: dict, rapport: dict) -> str:
     antall_avvik = rapport.get("oppsummering", {}).get("antall_avvik", 0)
     antall_advarsler = rapport.get("oppsummering", {}).get("antall_advarsler", 0)
 
-    # Avvik-tabell
     avvik_rader = ""
     for avvik in rapport.get("avvik", []):
         avvik_rader += f"""
@@ -49,7 +44,6 @@ def _bygg_html_innhold(faktura: dict, rapport: dict) -> str:
             </table>
         </div>"""
 
-    # Advarsler-tabell
     advarsler_rader = ""
     for adv in rapport.get("advarsler", []):
         advarsler_rader += f"""
@@ -120,7 +114,7 @@ def _bygg_html_innhold(faktura: dict, rapport: dict) -> str:
 
 def send_avviksvarsling(mottaker_epost: str, faktura: dict, rapport: dict, pdf_bytes: bytes) -> dict:
     """
-    Sender avviksvarsling via SMTP (Outlook/M365).
+    Sender avviksvarsling via Azure Communication Services Email.
 
     Args:
         mottaker_epost: E-postadressen til mottaker
@@ -131,53 +125,52 @@ def send_avviksvarsling(mottaker_epost: str, faktura: dict, rapport: dict, pdf_b
     Returns:
         dict med 'success' (bool) og 'melding' (str)
     """
-    if not SMTP_BRUKERNAVN or not SMTP_PASSORD:
-        logger.warning("SMTP-innstillinger ikke konfigurert - hopper over e-postvarsling")
-        return {"success": False, "melding": "E-postvarsling er ikke konfigurert (mangler SMTP-innstillinger)"}
+    if not ACS_CONNECTION_STRING:
+        logger.warning("ACS_CONNECTION_STRING er ikke satt - hopper over e-postvarsling")
+        return {"success": False, "melding": "E-postvarsling er ikke konfigurert (mangler ACS_CONNECTION_STRING)"}
 
     if not mottaker_epost:
-        logger.warning("Ingen mottaker-e-post - hopper over varsling")
-        return {"success": False, "melding": "Ingen mottaker-e-post konfigurert"}
+        return {"success": False, "melding": "Ingen mottaker-e-post oppgitt"}
 
     faktura_nr = faktura.get("faktura_nummer", "-")
     leverandor = faktura.get("leverandor_navn", "-")
     emne = f"Avvik funnet - Faktura {faktura_nr} fra {leverandor}"
 
+    html_innhold = _bygg_html_innhold(faktura, rapport)
+
+    vedlegg_base64 = base64.b64encode(pdf_bytes).decode("utf-8")
+    fnr = faktura_nr.replace("/", "-")
+
+    message = {
+        "senderAddress": ACS_SENDER_EMAIL,
+        "recipients": {
+            "to": [{"address": mottaker_epost}],
+        },
+        "content": {
+            "subject": emne,
+            "html": html_innhold,
+        },
+        "attachments": [
+            {
+                "name": f"Avviksrapport_{fnr}.pdf",
+                "contentType": "application/pdf",
+                "contentInBase64": vedlegg_base64,
+            }
+        ],
+    }
+
     try:
-        # Bygg e-post
-        msg = MIMEMultipart()
-        msg["From"] = SMTP_BRUKERNAVN
-        msg["To"] = mottaker_epost
-        msg["Subject"] = emne
+        client = EmailClient.from_connection_string(ACS_CONNECTION_STRING)
+        poller = client.begin_send(message)
+        result = poller.result()
 
-        # HTML-innhold
-        html_innhold = _bygg_html_innhold(faktura, rapport)
-        msg.attach(MIMEText(html_innhold, "html", "utf-8"))
+        if result["status"] == "Succeeded":
+            logger.info(f"Avviksvarsling sendt til {mottaker_epost} via Azure Communication Services")
+            return {"success": True, "melding": f"E-postvarsling sendt til {mottaker_epost}"}
+        else:
+            logger.error(f"ACS e-post feilet: {result}")
+            return {"success": False, "melding": f"E-post feilet med status: {result.get('status', 'ukjent')}"}
 
-        # PDF-vedlegg
-        fnr = faktura_nr.replace("/", "-")
-        vedlegg_filnavn = f"Avviksrapport_{fnr}.pdf"
-        vedlegg = MIMEApplication(pdf_bytes, _subtype="pdf")
-        vedlegg.add_header("Content-Disposition", "attachment", filename=vedlegg_filnavn)
-        msg.attach(vedlegg)
-
-        # Send via SMTP
-        with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
-            server.ehlo()
-            server.starttls()
-            server.ehlo()
-            server.login(SMTP_BRUKERNAVN, SMTP_PASSORD)
-            server.send_message(msg)
-
-        logger.info(f"Avviksvarsling sendt til {mottaker_epost}")
-        return {"success": True, "melding": f"E-postvarsling sendt til {mottaker_epost}"}
-
-    except smtplib.SMTPAuthenticationError:
-        logger.error("SMTP-autentisering feilet - sjekk brukernavn/passord")
-        return {"success": False, "melding": "E-post autentisering feilet. Sjekk SMTP-innstillinger."}
-    except smtplib.SMTPException as e:
-        logger.error(f"SMTP-feil: {e}")
-        return {"success": False, "melding": f"Feil ved sending av e-post: {str(e)}"}
     except Exception as e:
-        logger.exception("Uventet feil ved sending av avviksvarsling")
-        return {"success": False, "melding": f"Uventet feil: {str(e)}"}
+        logger.exception("Feil ved sending av avviksvarsling via ACS")
+        return {"success": False, "melding": f"Feil ved sending: {str(e)}"}
