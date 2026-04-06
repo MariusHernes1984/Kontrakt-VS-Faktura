@@ -86,8 +86,8 @@ def opprett_kontrakt(data):
         INSERT INTO kontrakter
         (leverandor_navn, prosjekt_id, kontrakt_nummer, timepris,
          maks_timer_per_maaned, sla_responstid_timer, avtalt_rabatt_prosent,
-         valuta, startdato, sluttdato, beskrivelse)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         valuta, startdato, sluttdato, beskrivelse, kontakt_person, kontakt_epost)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
         data["leverandor_navn"],
         data.get("prosjekt_id", ""),
@@ -100,6 +100,8 @@ def opprett_kontrakt(data):
         data.get("startdato", ""),
         data.get("sluttdato", ""),
         data.get("beskrivelse", ""),
+        data.get("kontakt_person", ""),
+        data.get("kontakt_epost", ""),
     ))
     conn.commit()
     kontrakt_id = cursor.lastrowid

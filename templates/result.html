@@ -148,7 +148,23 @@
 </div>
 {% endif %}
 
-<div style="margin-top: 1rem; display: flex; gap: 1rem;">
+<!-- Faktura-dokument -->
+{% if faktura.filnavn %}
+<div class="card">
+    <h3>Fakturadokument</h3>
+    <iframe src="{{ url_for('vis_faktura_pdf', faktura_id=faktura.id) }}"
+            style="width: 100%; height: 600px; border: 1px solid var(--gray-200); border-radius: 8px;">
+    </iframe>
+</div>
+{% endif %}
+
+<div style="margin-top: 1rem; display: flex; gap: 1rem; flex-wrap: wrap;">
+    {% if rapport.avvik or rapport.advarsler %}
+    <a href="{{ url_for('last_ned_rapport', faktura_id=faktura.id) }}" class="btn btn-danger" style="font-weight: 600;">Last ned avviksrapport (PDF)</a>
+    {% endif %}
+    {% if faktura.filnavn %}
+    <a href="{{ url_for('vis_faktura_pdf', faktura_id=faktura.id) }}" target="_blank" class="btn btn-primary">Apne faktura-PDF</a>
+    {% endif %}
     <a href="{{ url_for('last_opp_faktura') }}" class="btn btn-primary">Last opp ny faktura</a>
     <a href="{{ url_for('dashboard') }}" class="btn" style="background: var(--gray-100);">Tilbake til dashboard</a>
 </div>

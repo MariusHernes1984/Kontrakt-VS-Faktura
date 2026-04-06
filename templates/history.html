@@ -44,6 +44,12 @@
                 </td>
                 <td style="display: flex; gap: 0.5rem;">
                     <a href="{{ url_for('vis_resultat', faktura_id=f.id) }}" class="btn btn-sm btn-primary">Detaljer</a>
+                    {% if f.filnavn %}
+                    <a href="{{ url_for('vis_faktura_pdf', faktura_id=f.id) }}" target="_blank" class="btn btn-sm" style="background: var(--gray-100);">PDF</a>
+                    {% endif %}
+                    {% if f.status == 'AVVIK FUNNET' or f.status == 'ADVARSEL' %}
+                    <a href="{{ url_for('last_ned_rapport', faktura_id=f.id) }}" class="btn btn-sm btn-danger">Rapport</a>
+                    {% endif %}
                     <form method="POST" action="{{ url_for('slett_faktura_route', faktura_id=f.id) }}"
                           onsubmit="return confirm('Slette denne fakturaen?')">
                         <button type="submit" class="btn btn-sm btn-danger">Slett</button>

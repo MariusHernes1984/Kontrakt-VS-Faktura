@@ -2,7 +2,7 @@ import os
 import json
 from flask import (
     Flask, render_template, request, redirect, url_for, flash, jsonify,
-    send_from_directory
+    send_from_directory, Response
 )
 from werkzeug.utils import secure_filename
 from database import (
@@ -12,6 +12,8 @@ from database import (
 )
 from analyzer import analyser_faktura
 from validator import finn_og_valider
+from report_generator import generer_avviksrapport
+from email_client import send_avviksvarsling
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -69,6 +71,8 @@ def ny_kontrakt():
             "startdato": request.form.get("startdato", ""),
             "sluttdato": request.form.get("sluttdato", ""),
             "beskrivelse": request.form.get("beskrivelse", ""),
+            "kontakt_person": request.form.get("kontakt_person", ""),
+            "kontakt_epost": request.form.get("kontakt_epost", ""),
         }
         opprett_kontrakt(data)
         flash("Kontrakt opprettet!", "success")
@@ -148,6 +152,33 @@ def last_opp_faktura():
             }
             logg_id = lagre_faktura_logg(logg_data)
 
+            # Send e-postvarsling ved avvik eller advarsel
+            if resultat["status"] in ("AVVIK FUNNET", "ADVARSEL"):
+                try:
+                    kontrakt_id = resultat.get("kontrakt_id")
+                    mottaker_epost = None
+                    if kontrakt_id:
+                        kontrakt = hent_kontrakt(kontrakt_id)
+                        mottaker_epost = kontrakt.get("kontakt_epost") if kontrakt else None
+
+                    if mottaker_epost:
+                        pdf_bytes = generer_avviksrapport(faktura_data, resultat)
+                        epost_resultat = send_avviksvarsling(
+                            mottaker_epost=mottaker_epost,
+                            faktura=faktura_data,
+                            rapport=resultat,
+                            pdf_bytes=pdf_bytes,
+                        )
+                        if epost_resultat["success"]:
+                            flash(f"Avviksvarsling sendt til {mottaker_epost}", "success")
+                        else:
+                            flash(f"Kunne ikke sende e-postvarsling: {epost_resultat['melding']}", "warning")
+                    else:
+                        flash("Ingen kontakt-e-post konfigurert for denne kontrakten - e-postvarsling ikke sendt.", "info")
+                except Exception as e:
+                    # Ikke blokker brukerflyt ved e-postfeil
+                    flash(f"E-postvarsling feilet: {str(e)}", "warning")
+
             return redirect(url_for("vis_resultat", faktura_id=logg_id))
         else:
             flash("Kun PDF-filer er tillatt.", "error")
@@ -165,6 +196,40 @@ def vis_resultat(faktura_id):
 
     avvik_rapport = json.loads(faktura["avvik_rapport"]) if faktura.get("avvik_rapport") else {}
     return render_template("result.html", faktura=faktura, rapport=avvik_rapport)
+
+
+@app.route("/faktura/<int:faktura_id>/rapport")
+def last_ned_rapport(faktura_id):
+    faktura = hent_faktura(faktura_id)
+    if not faktura:
+        flash("Faktura ikke funnet.", "error")
+        return redirect(url_for("dashboard"))
+
+    avvik_rapport = json.loads(faktura["avvik_rapport"]) if faktura.get("avvik_rapport") else {}
+    if not avvik_rapport.get("avvik") and not avvik_rapport.get("advarsler"):
+        flash("Ingen avvik eller advarsler a rapportere.", "info")
+        return redirect(url_for("vis_resultat", faktura_id=faktura_id))
+
+    pdf_bytes = generer_avviksrapport(faktura, avvik_rapport)
+    fnr = faktura.get("faktura_nummer", f"id-{faktura_id}").replace("/", "-")
+    filnavn = f"Avviksrapport_{fnr}.pdf"
+
+    return Response(
+        pdf_bytes,
+        mimetype="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename={filnavn}"},
+    )
+
+
+@app.route("/faktura/<int:faktura_id>/pdf")
+def vis_faktura_pdf(faktura_id):
+    faktura = hent_faktura(faktura_id)
+    if not faktura or not faktura.get("filnavn"):
+        flash("Ingen PDF tilgjengelig for denne fakturaen.", "error")
+        return redirect(url_for("dashboard"))
+    return send_from_directory(
+        UPLOAD_FOLDER, faktura["filnavn"], as_attachment=False
+    )
 
 
 @app.route("/historikk")

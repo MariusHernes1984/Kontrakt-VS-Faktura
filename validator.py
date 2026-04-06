@@ -132,6 +132,30 @@ def valider_faktura_mot_kontrakt(faktura_data, kontrakt):
                 "beskrivelse": "Kunne ikke tolke datoformat for sammenligning.",
             })
 
+    # Sjekk prosjekt-ID-match
+    if kontrakt.get("prosjekt_id") and faktura_data.get("prosjekt_id"):
+        k_pid = kontrakt["prosjekt_id"].lower().strip()
+        f_pid = faktura_data["prosjekt_id"].lower().strip()
+        if k_pid != f_pid and k_pid not in f_pid and f_pid not in k_pid:
+            advarsler.append({
+                "felt": "Prosjekt-ID",
+                "type": "ADVARSEL",
+                "faktura_verdi": faktura_data["prosjekt_id"],
+                "kontrakt_verdi": kontrakt["prosjekt_id"],
+                "beskrivelse": (
+                    "Prosjekt-ID på faktura samsvarer ikke med kontrakten. "
+                    "Verifiser at fakturaen tilhører riktig prosjekt."
+                ),
+            })
+        else:
+            ok.append({
+                "felt": "Prosjekt-ID",
+                "type": "OK",
+                "faktura_verdi": faktura_data["prosjekt_id"],
+                "kontrakt_verdi": kontrakt["prosjekt_id"],
+                "beskrivelse": "Prosjekt-ID stemmer med kontrakten.",
+            })
+
     # Sjekk leverandørnavn-match
     if kontrakt.get("leverandor_navn") and faktura_data.get("leverandor_navn"):
         k_navn = kontrakt["leverandor_navn"].lower().strip()

@@ -97,6 +97,23 @@
     </div>
 </div>
 
+<!-- Kontaktinformasjon -->
+{% if kontrakt.kontakt_person or kontrakt.kontakt_epost %}
+<div class="card">
+    <h3>Kontaktinformasjon</h3>
+    <div class="detail-grid">
+        <div class="detail-item">
+            <div class="detail-label">Kontaktperson</div>
+            <div class="detail-value">{{ kontrakt.kontakt_person or '-' }}</div>
+        </div>
+        <div class="detail-item">
+            <div class="detail-label">E-post (avviksvarsling)</div>
+            <div class="detail-value">{{ kontrakt.kontakt_epost or '-' }}</div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
 <!-- Kontraktsperiode -->
 <div class="card">
     <h3>Kontraktsperiode</h3>
