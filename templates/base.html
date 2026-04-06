@@ -14,6 +14,7 @@
             <a href="{{ url_for('last_opp_faktura') }}" class="{% if request.endpoint == 'last_opp_faktura' %}active{% endif %}">Last opp faktura</a>
             <a href="{{ url_for('kontrakter_liste') }}" class="{% if request.endpoint in ['kontrakter_liste', 'ny_kontrakt'] %}active{% endif %}">Kontrakter</a>
             <a href="{{ url_for('historikk') }}" class="{% if request.endpoint == 'historikk' %}active{% endif %}">Historikk</a>
+            <a href="{{ url_for('varsling') }}" class="{% if request.endpoint == 'varsling' %}active{% endif %}">Varsling</a>
         </nav>
     </div>
 

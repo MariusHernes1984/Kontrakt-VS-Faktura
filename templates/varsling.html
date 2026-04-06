@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header">
+    <h2>Varsling</h2>
+    <p>Konfigurer e-postvarsling ved avvik og advarsler</p>
+</div>
+
+<!-- Legg til ny mottaker -->
+<div class="card">
+    <h3>Legg til varslingsmottaker</h3>
+    <form method="POST" action="{{ url_for('ny_varslingsmottaker') }}" style="display: flex; gap: 1rem; align-items: flex-end; flex-wrap: wrap;">
+        <div class="form-group" style="flex: 1; min-width: 200px; margin-bottom: 0;">
+            <label for="epost">E-postadresse *</label>
+            <input type="email" id="epost" name="epost" required placeholder="navn@firma.no">
+        </div>
+        <div class="form-group" style="flex: 1; min-width: 200px; margin-bottom: 0;">
+            <label for="leverandor_navn">Leverandor (valgfritt)</label>
+            <select id="leverandor_navn" name="leverandor_navn">
+                <option value="">Alle leverandorer (standard)</option>
+                {% for lev in leverandorer %}
+                <option value="{{ lev }}">{{ lev }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <button type="submit" class="btn btn-primary" style="margin-bottom: 0;">Legg til</button>
+    </form>
+    <p style="color: var(--gray-500); font-size: 0.85rem; margin-top: 0.75rem;">
+        Velg en spesifikk leverandor for granulert varsling, eller la feltet sta tomt for a motta varsler for alle leverandorer.
+    </p>
+</div>
+
+<!-- Oversikt over mottakere -->
+<div class="card">
+    <h3>Aktive varslingsmottakere</h3>
+
+    {% if mottakere %}
+    <table>
+        <thead>
+            <tr>
+                <th>E-post</th>
+                <th>Leverandor</th>
+                <th>Status</th>
+                <th>Lagt til</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for m in mottakere %}
+            <tr>
+                <td>{{ m.epost }}</td>
+                <td>
+                    {% if m.leverandor_navn %}
+                        <span class="badge badge-info">{{ m.leverandor_navn }}</span>
+                    {% else %}
+                        <span class="badge badge-success">Alle leverandorer</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if m.aktiv %}
+                        <span class="badge badge-success">Aktiv</span>
+                    {% else %}
+                        <span class="badge badge-warning">Deaktivert</span>
+                    {% endif %}
+                </td>
+                <td>{{ m.opprettet[:16] if m.opprettet else '-' }}</td>
+                <td style="display: flex; gap: 0.5rem;">
+                    <form method="POST" action="{{ url_for('toggle_varslingsmottaker', mottaker_id=m.id) }}">
+                        {% if m.aktiv %}
+                        <input type="hidden" name="aktiv" value="0">
+                        <button type="submit" class="btn btn-sm" style="background: var(--gray-100);">Deaktiver</button>
+                        {% else %}
+                        <input type="hidden" name="aktiv" value="1">
+                        <button type="submit" class="btn btn-sm btn-primary">Aktiver</button>
+                        {% endif %}
+                    </form>
+                    <form method="POST" action="{{ url_for('slett_varslingsmottaker_route', mottaker_id=m.id) }}"
+                          onsubmit="return confirm('Slette denne mottakeren?')">
+                        <button type="submit" class="btn btn-sm btn-danger">Slett</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-icon">&#128232;</div>
+        <p>Ingen varslingsmottakere konfigurert enda.</p>
+        <p style="color: var(--gray-500); font-size: 0.9rem;">Legg til en e-postadresse ovenfor for a begynne a motta varsler ved avvik.</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Info-boks -->
+<div class="card" style="background: var(--gray-50); border-left: 4px solid var(--primary);">
+    <h3 style="margin-top: 0;">Slik fungerer varsling</h3>
+    <ul style="color: var(--gray-700); line-height: 1.8; padding-left: 1.2rem;">
+        <li><strong>Alle leverandorer:</strong> Mottakere uten spesifikk leverandor far varsler for alle avvik.</li>
+        <li><strong>Per leverandor:</strong> Mottakere knyttet til en leverandor far kun varsler for den leverandoren.</li>
+        <li><strong>Kombinert:</strong> Bade standard- og leverandor-spesifikke mottakere varsles nar et avvik oppdages.</li>
+        <li><strong>Vedlegg:</strong> Avviksrapporten legges ved som PDF i e-posten.</li>
+    </ul>
+</div>
+{% endblock %}

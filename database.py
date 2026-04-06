@@ -50,6 +50,14 @@ def init_db():
             opprettet TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
 
+        CREATE TABLE IF NOT EXISTS varslingsmottakere (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            epost TEXT NOT NULL,
+            leverandor_navn TEXT,
+            aktiv INTEGER DEFAULT 1,
+            opprettet TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+
         CREATE TABLE IF NOT EXISTS faktura_logg (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             filnavn TEXT NOT NULL,
@@ -203,5 +211,56 @@ def hent_faktura(faktura_id):
 def slett_faktura(faktura_id):
     conn = get_db()
     conn.execute("DELETE FROM faktura_logg WHERE id = ?", (faktura_id,))
+    conn.commit()
+    conn.close()
+
+
+# --- Varslingsmottakere ---
+
+def opprett_varslingsmottaker(epost, leverandor_navn=None):
+    conn = get_db()
+    conn.execute(
+        "INSERT INTO varslingsmottakere (epost, leverandor_navn) VALUES (?, ?)",
+        (epost, leverandor_navn or None),
+    )
+    conn.commit()
+    conn.close()
+
+
+def hent_alle_varslingsmottakere():
+    conn = get_db()
+    rows = conn.execute(
+        "SELECT * FROM varslingsmottakere ORDER BY leverandor_navn IS NULL, leverandor_navn, epost"
+    ).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def hent_varslingsmottakere_for_leverandor(leverandor_navn):
+    """Henter mottakere for en spesifikk leverandor + standard-mottakere (uten leverandor)."""
+    conn = get_db()
+    rows = conn.execute(
+        """SELECT * FROM varslingsmottakere
+           WHERE aktiv = 1
+             AND (leverandor_navn IS NULL OR LOWER(leverandor_navn) = LOWER(?))""",
+        (leverandor_navn,),
+    ).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def oppdater_varslingsmottaker(mottaker_id, aktiv):
+    conn = get_db()
+    conn.execute(
+        "UPDATE varslingsmottakere SET aktiv = ? WHERE id = ?",
+        (1 if aktiv else 0, mottaker_id),
+    )
+    conn.commit()
+    conn.close()
+
+
+def slett_varslingsmottaker(mottaker_id):
+    conn = get_db()
+    conn.execute("DELETE FROM varslingsmottakere WHERE id = ?", (mottaker_id,))
     conn.commit()
     conn.close()

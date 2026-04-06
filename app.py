@@ -8,7 +8,9 @@ from werkzeug.utils import secure_filename
 from database import (
     init_db, opprett_kontrakt, hent_alle_kontrakter, hent_kontrakt,
     slett_kontrakt, lagre_faktura_logg, hent_faktura_logg, hent_faktura,
-    slett_faktura
+    slett_faktura, opprett_varslingsmottaker, hent_alle_varslingsmottakere,
+    hent_varslingsmottakere_for_leverandor, oppdater_varslingsmottaker,
+    slett_varslingsmottaker
 )
 from analyzer import analyser_faktura
 from validator import finn_og_valider
@@ -155,28 +157,29 @@ def last_opp_faktura():
             # Send e-postvarsling ved avvik eller advarsel
             if resultat["status"] in ("AVVIK FUNNET", "ADVARSEL"):
                 try:
-                    kontrakt_id = resultat.get("kontrakt_id")
-                    mottaker_epost = None
-                    if kontrakt_id:
-                        kontrakt = hent_kontrakt(kontrakt_id)
-                        mottaker_epost = kontrakt.get("kontakt_epost") if kontrakt else None
+                    leverandor = faktura_data.get("leverandor_navn", "")
+                    mottakere = hent_varslingsmottakere_for_leverandor(leverandor)
 
-                    if mottaker_epost:
+                    if mottakere:
                         pdf_bytes = generer_avviksrapport(faktura_data, resultat)
-                        epost_resultat = send_avviksvarsling(
-                            mottaker_epost=mottaker_epost,
-                            faktura=faktura_data,
-                            rapport=resultat,
-                            pdf_bytes=pdf_bytes,
-                        )
-                        if epost_resultat["success"]:
-                            flash(f"Avviksvarsling sendt til {mottaker_epost}", "success")
-                        else:
-                            flash(f"Kunne ikke sende e-postvarsling: {epost_resultat['melding']}", "warning")
-                    else:
-                        flash("Ingen kontakt-e-post konfigurert for denne kontrakten - e-postvarsling ikke sendt.", "info")
+                        sendt_til = []
+                        feilet = []
+                        for m in mottakere:
+                            epost_resultat = send_avviksvarsling(
+                                mottaker_epost=m["epost"],
+                                faktura=faktura_data,
+                                rapport=resultat,
+                                pdf_bytes=pdf_bytes,
+                            )
+                            if epost_resultat["success"]:
+                                sendt_til.append(m["epost"])
+                            else:
+                                feilet.append(m["epost"])
+                        if sendt_til:
+                            flash(f"Avviksvarsling sendt til {', '.join(sendt_til)}", "success")
+                        if feilet:
+                            flash(f"Kunne ikke sende til: {', '.join(feilet)}", "warning")
                 except Exception as e:
-                    # Ikke blokker brukerflyt ved e-postfeil
                     flash(f"E-postvarsling feilet: {str(e)}", "warning")
 
             return redirect(url_for("vis_resultat", faktura_id=logg_id))
@@ -243,6 +246,46 @@ def slett_faktura_route(faktura_id):
     slett_faktura(faktura_id)
     flash("Faktura slettet.", "info")
     return redirect(request.referrer or url_for("dashboard"))
+
+
+@app.route("/varsling")
+def varsling():
+    mottakere = hent_alle_varslingsmottakere()
+    kontrakter = hent_alle_kontrakter()
+    leverandorer = sorted(set(k["leverandor_navn"] for k in kontrakter if k.get("leverandor_navn")))
+    return render_template("varsling.html", mottakere=mottakere, leverandorer=leverandorer)
+
+
+@app.route("/varsling/ny", methods=["POST"])
+def ny_varslingsmottaker():
+    epost = request.form.get("epost", "").strip()
+    leverandor = request.form.get("leverandor_navn", "").strip() or None
+
+    if not epost:
+        flash("E-postadresse er pakrevd.", "error")
+        return redirect(url_for("varsling"))
+
+    opprett_varslingsmottaker(epost, leverandor)
+    if leverandor:
+        flash(f"Varslingsmottaker {epost} lagt til for {leverandor}.", "success")
+    else:
+        flash(f"Varslingsmottaker {epost} lagt til for alle leverandorer.", "success")
+    return redirect(url_for("varsling"))
+
+
+@app.route("/varsling/<int:mottaker_id>/toggle", methods=["POST"])
+def toggle_varslingsmottaker(mottaker_id):
+    aktiv = request.form.get("aktiv") == "1"
+    oppdater_varslingsmottaker(mottaker_id, aktiv)
+    flash("Varslingsmottaker oppdatert.", "info")
+    return redirect(url_for("varsling"))
+
+
+@app.route("/varsling/<int:mottaker_id>/slett", methods=["POST"])
+def slett_varslingsmottaker_route(mottaker_id):
+    slett_varslingsmottaker(mottaker_id)
+    flash("Varslingsmottaker slettet.", "info")
+    return redirect(url_for("varsling"))
 
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
