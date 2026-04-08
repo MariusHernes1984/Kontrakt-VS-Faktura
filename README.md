@@ -10,6 +10,12 @@ AI-drevet Proof of Concept for innkjøpsavdelingen som automatisk verifiserer at
 
 ### Kjernefunksjoner
 - **PDF-opplasting av fakturaer** – Last opp leverandørfaktura som PDF direkte i webgrensesnittet.
+- **PDF-opplasting av kontrakter** – Last opp kontrakt-PDF og la AI automatisk ekstrahere felter:
+  - Leverandørnavn, kontraktsnummer, timepris, maks timer, rabatter, gyldighetsperiode m.m.
+  - Per-felt **konfidensscorer** (høy/middels/lav) med fargekodede indikatorer (grønn/gul/rød).
+  - Forhåndsvis og juster AI-foreslåtte verdier før lagring.
+  - Advarsel ved duplikat kontraktsnummer.
+- **OCR-støtte** – Skannede/bildebaserte PDF-er håndteres automatisk via Tesseract OCR med norsk språkpakke.
 - **AI-analyse** – Azure OpenAI (`gpt-5.3-chat`) ekstraherer strukturerte data fra fakturaen (leverandør, fakturanummer, timepris, antall timer, totalbeløp, prosjekt-ID, periode m.m.).
 - **Automatisk kontraktsmatching** – Appen finner tilhørende kontrakt basert på leverandørnavn og/eller prosjekt-ID.
 - **Valideringsmotor** med 6 regler:
@@ -26,9 +32,12 @@ AI-drevet Proof of Concept for innkjøpsavdelingen som automatisk verifiserer at
 - **Avviksrapport (PDF)** – Genereres automatisk med `fpdf2` og kan lastes ned eller sendes som vedlegg.
 
 ### Kontraktsforvaltning
-- Registrer kontrakter manuelt eller last opp kontrakt-PDF.
+- **To måter å opprette kontrakt:**
+  1. **Last opp PDF** → AI leser og foreslår verdier → verifiser/juster → lagre.
+  2. **Manuelt skjema** → fyll ut feltene selv.
 - Se kontraktsdetaljer med innebygget PDF-visning.
 - Slett eller oppdater kontrakter.
+- **Auto-seed ved tom database** – Demo-data lastes automatisk ved første oppstart.
 
 ### Varsling (e-post)
 - Egen **Varsling**-side for å administrere mottakere av avviksvarsel.
@@ -70,11 +79,11 @@ AI-drevet Proof of Concept for innkjøpsavdelingen som automatisk verifiserer at
 ### Komponenter
 | Lag | Teknologi |
 |-----|-----------|
-| Web / UI | Flask 3.1, Jinja2, vanilla HTML/CSS (norsk UI) |
+| Web / UI | Flask 3.1, Jinja2, vanilla HTML/CSS (norsk UI, Atea-farger) |
 | WSGI | gunicorn 23 |
 | Hosting | Azure App Service (Linux, Python 3.12) |
 | AI | Azure OpenAI – deployment `gpt-5.3-chat` |
-| PDF-ekstraksjon | PyPDF2 |
+| PDF-ekstraksjon | PyPDF2 + Tesseract OCR (fallback for skannede PDF-er) |
 | PDF-generering | fpdf2 (avviksrapport, kontrakter) |
 | Database | SQLite (`kontrakter.db`) |
 | E-post | Azure Communication Services Email (`azure-communication-email`) |
@@ -109,7 +118,7 @@ FLASK_SECRET_KEY=<random>
 
 ### Alternativ 1 – Bruk deployet versjon
 1. Gå til https://kontraktskontroll-poc.azurewebsites.net
-2. **Kontrakter → Ny kontrakt** – registrer en leverandørkontrakt (f.eks. timepris 1200, maks 160 timer/mnd).
+2. **Kontrakter → Last opp PDF** – last opp en kontrakt-PDF og la AI fylle ut feltene automatisk, eller bruk **Ny kontrakt** for manuell registrering.
 3. **Varsling → Legg til mottaker** – legg til din e-post (la leverandør stå tom for å få alle varsler).
 4. **Last opp faktura** – last opp en PDF-faktura fra samme leverandør.
 5. Se resultatet: status, avviksrapport og e-postvarsel i innboksen.
@@ -142,7 +151,7 @@ flask --app app run
 Databasen (`kontrakter.db`) opprettes automatisk ved første oppstart.
 
 ### Demoflyt (forslag)
-1. Opprett kontrakt: *Konsulentfirma AS*, timepris 1200 NOK, maks 160 t/mnd, rabatt 10 %.
+1. **AI-utfylling av kontrakt:** Gå til Kontrakter → Last opp PDF → bruk en av demo-kontraktene i `demo_kontrakter/` → sjekk konfidensscorer og lagre.
 2. Legg til varslingsmottaker på Varsling-siden.
 3. Last opp en testfaktura der timepris = 1400 → forventet status **AVVIK FUNNET**.
 4. Last ned avviksrapport-PDF og sjekk e-postvarsel.
@@ -156,12 +165,22 @@ Databasen (`kontrakter.db`) opprettes automatisk ved første oppstart.
 .
 ├── app.py                    # Flask-ruter og applikasjonslogikk
 ├── database.py               # SQLite CRUD
-├── ai_analyzer.py            # Azure OpenAI-integrasjon
+├── analyzer.py               # Azure OpenAI-integrasjon (faktura + kontrakt)
+├── pdf_extractor.py          # PDF-ekstraksjon med OCR-fallback
 ├── validator.py              # Valideringsregler
 ├── report_generator.py       # Avviksrapport (fpdf2)
 ├── email_client.py           # Azure Communication Services Email
+├── seed_data.py              # Seed-data for demo
+├── seed_extra.py             # Ekstra seed-data
+├── generate_contracts.py     # Genererer demo-kontrakt-PDF-er
+├── generate_invoices.py      # Genererer demo-faktura-PDF-er
+├── generate_demo_contracts.py # Genererer eksempelkontrakter for opplastingstest
+├── startup.sh                # Azure App Service startup (OCR-installasjon)
 ├── templates/                # Jinja2 HTML-maler
-├── static/                   # CSS / assets
+├── static/                   # CSS / assets (Atea-logo, farger)
+├── kontrakt_filer/           # Lagrede kontrakt-PDF-er
+├── demo_kontrakter/          # Demo-PDF-er for testing av AI-ekstraksjon
+├── uploads/                  # Opplastede fakturaer
 ├── requirements.txt
 └── README.md
 ```
