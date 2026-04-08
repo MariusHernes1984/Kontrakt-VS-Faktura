@@ -1,19 +1,25 @@
 :root {
-    --primary: #1a56db;
-    --primary-light: #e1effe;
-    --success: #059669;
-    --success-bg: #ecfdf5;
+    /* Atea brand colors */
+    --atea-green: #008A00;
+    --atea-green-dark: #006e00;
+    --atea-gray: #4D575D;
+    --atea-light: #EDEEEE;
+
+    --primary: #008A00;
+    --primary-light: #e6f4e6;
+    --success: #008A00;
+    --success-bg: #e6f4e6;
     --warning: #d97706;
     --warning-bg: #fffbeb;
     --danger: #dc2626;
     --danger-bg: #fef2f2;
-    --gray-50: #f9fafb;
-    --gray-100: #f3f4f6;
-    --gray-200: #e5e7eb;
-    --gray-300: #d1d5db;
-    --gray-500: #6b7280;
-    --gray-700: #374151;
-    --gray-900: #111827;
+    --gray-50: #EDEEEE;
+    --gray-100: #EDEEEE;
+    --gray-200: #d8dadb;
+    --gray-300: #b8bcbf;
+    --gray-500: #4D575D;
+    --gray-700: #3a4146;
+    --gray-900: #1f2326;
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -26,38 +32,65 @@ body {
 }
 
 .navbar {
-    background: var(--primary);
-    color: white;
+    background: #ffffff;
+    color: var(--atea-gray);
     padding: 0 2rem;
     display: flex;
     align-items: center;
-    height: 60px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    height: 68px;
+    border-bottom: 3px solid var(--atea-green);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.06);
+}
+
+.navbar-brand {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    text-decoration: none;
+    color: var(--atea-gray);
+}
+
+.navbar-logo {
+    height: 36px;
+    width: auto;
+    display: block;
+}
+
+.navbar-divider {
+    width: 1px;
+    height: 32px;
+    background: var(--gray-200);
 }
 
 .navbar h1 {
-    font-size: 1.25rem;
+    font-size: 1.15rem;
     font-weight: 600;
+    color: var(--atea-gray);
 }
 
 .navbar nav {
     margin-left: 3rem;
     display: flex;
-    gap: 0.5rem;
+    gap: 0.25rem;
 }
 
 .navbar nav a {
-    color: rgba(255,255,255,0.85);
+    color: var(--atea-gray);
     text-decoration: none;
     padding: 0.5rem 1rem;
     border-radius: 6px;
     font-size: 0.9rem;
-    transition: background 0.2s;
+    font-weight: 500;
+    transition: all 0.2s;
 }
 
-.navbar nav a:hover,
+.navbar nav a:hover {
+    background: var(--atea-light);
+    color: var(--atea-green);
+}
+
 .navbar nav a.active {
-    background: rgba(255,255,255,0.15);
+    background: var(--atea-green);
     color: white;
 }
 

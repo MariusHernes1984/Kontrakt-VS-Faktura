@@ -1,83 +1,170 @@
 {% extends "base.html" %}
 {% block content %}
+
+{# --- Hjelpemakro for AI-foreslåtte felter med confidence-indikator --- #}
+{% macro ai_field(navn) %}
+    {%- if felter and felter.get(navn) -%}
+        {%- set f = felter.get(navn) -%}
+        {%- set c = f.get('confidence', 0) or 0 -%}
+        {%- if c >= 0.8 -%}
+            data-conf="high"
+        {%- elif c >= 0.5 -%}
+            data-conf="med"
+        {%- else -%}
+            data-conf="low"
+        {%- endif -%}
+    {%- endif -%}
+{% endmacro %}
+
+{% macro ai_value(navn) -%}
+    {%- if felter and felter.get(navn) and felter.get(navn).get('verdi') is not none -%}
+        {{ felter.get(navn).get('verdi') }}
+    {%- endif -%}
+{%- endmacro %}
+
+{% macro ai_badge(navn) -%}
+    {%- if felter and felter.get(navn) -%}
+        {%- set c = felter.get(navn).get('confidence', 0) or 0 -%}
+        {%- if c >= 0.8 -%}
+            <span class="ai-tag ai-high">AI ✓ {{ "%.0f"|format(c*100) }}%</span>
+        {%- elif c >= 0.5 -%}
+            <span class="ai-tag ai-med">AI ⚠ {{ "%.0f"|format(c*100) }}%</span>
+        {%- elif c > 0 -%}
+            <span class="ai-tag ai-low">AI ✗ {{ "%.0f"|format(c*100) }}%</span>
+        {%- endif -%}
+    {%- endif -%}
+{%- endmacro %}
+
+<style>
+    .ai-tag { font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; margin-left: 6px; font-weight: 600; }
+    .ai-high { background: #d1fae5; color: #065f46; }
+    .ai-med  { background: #fef3c7; color: #92400e; }
+    .ai-low  { background: #fee2e2; color: #991b1b; }
+    input[data-conf="high"], select[data-conf="high"], textarea[data-conf="high"] { border-left: 4px solid #10b981; background: #f0fdf4; }
+    input[data-conf="med"],  select[data-conf="med"],  textarea[data-conf="med"]  { border-left: 4px solid #f59e0b; background: #fffbeb; }
+    input[data-conf="low"],  select[data-conf="low"],  textarea[data-conf="low"]  { border-left: 4px solid #ef4444; background: #fef2f2; }
+    .ai-banner { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 1rem; margin-bottom: 1rem; }
+    .ai-banner h3 { margin: 0 0 0.5rem 0; color: #1e40af; }
+    .ai-warn-banner { background: #fef3c7; border: 1px solid #fcd34d; border-radius: 8px; padding: 1rem; margin-bottom: 1rem; color: #92400e; }
+</style>
+
 <div class="page-header">
-    <h2>Ny kontrakt</h2>
-    <p>Registrer en ny leverandorkontrakt</p>
+    <h2>{% if felter %}Bekreft kontrakt{% else %}Ny kontrakt{% endif %}</h2>
+    <p>{% if felter %}AI har foreslått verdier nedenfor. Verifiser og juster før lagring.{% else %}Registrer en ny leverandørkontrakt{% endif %}</p>
 </div>
 
+{% if felter %}
+<div class="ai-banner">
+    <h3>🤖 AI-utfylling</h3>
+    <p style="margin: 0;">
+        Felter med <strong style="color:#065f46;">grønn</strong> ramme er høy konfidens,
+        <strong style="color:#92400e;">gul</strong> er middels, og
+        <strong style="color:#991b1b;">rød</strong> er lav. Tomme felter ble ikke funnet i kontrakten.
+    </p>
+</div>
+{% endif %}
+
+{% if brukte_ocr %}
+<div class="ai-warn-banner">
+    📷 PDF-en var skannet — tekst ble hentet via OCR. Verifiser feltene ekstra nøye.
+</div>
+{% endif %}
+
+{% if advarsler %}
+<div class="ai-warn-banner">
+    <strong>Advarsler fra AI:</strong>
+    <ul style="margin: 0.5rem 0 0 1.2rem;">
+        {% for a in advarsler %}<li>{{ a }}</li>{% endfor %}
+    </ul>
+</div>
+{% endif %}
+
 <div class="card">
-    <form method="POST">
+    <form method="POST" action="{{ url_for('ny_kontrakt') }}">
+        {% if pending_pdf %}
+        <input type="hidden" name="pending_pdf" value="{{ pending_pdf }}">
+        {% endif %}
+
         <div class="form-row">
             <div class="form-group">
-                <label for="leverandor_navn">Leverandornavn *</label>
+                <label for="leverandor_navn">Leverandørnavn * {{ ai_badge('leverandor_navn') }}</label>
                 <input type="text" id="leverandor_navn" name="leverandor_navn" required
+                       value="{{ ai_value('leverandor_navn') }}" {{ ai_field('leverandor_navn') }}
                        placeholder="F.eks. Konsulentfirma AS">
             </div>
             <div class="form-group">
-                <label for="kontrakt_nummer">Kontraktnummer</label>
+                <label for="kontrakt_nummer">Kontraktnummer {{ ai_badge('kontrakt_nummer') }}</label>
                 <input type="text" id="kontrakt_nummer" name="kontrakt_nummer"
+                       value="{{ ai_value('kontrakt_nummer') }}" {{ ai_field('kontrakt_nummer') }}
                        placeholder="F.eks. K-2024-001">
             </div>
         </div>
 
         <div class="form-row">
             <div class="form-group">
-                <label for="prosjekt_id">Prosjekt-ID</label>
+                <label for="prosjekt_id">Prosjekt-ID {{ ai_badge('prosjekt_id') }}</label>
                 <input type="text" id="prosjekt_id" name="prosjekt_id"
+                       value="{{ ai_value('prosjekt_id') }}" {{ ai_field('prosjekt_id') }}
                        placeholder="F.eks. PRJ-123">
             </div>
             <div class="form-group">
-                <label for="valuta">Valuta</label>
-                <select id="valuta" name="valuta">
-                    <option value="NOK">NOK</option>
-                    <option value="SEK">SEK</option>
-                    <option value="EUR">EUR</option>
-                    <option value="USD">USD</option>
+                <label for="valuta">Valuta {{ ai_badge('valuta') }}</label>
+                {% set val = ai_value('valuta') | trim or 'NOK' %}
+                <select id="valuta" name="valuta" {{ ai_field('valuta') }}>
+                    {% for v in ['NOK','SEK','EUR','USD'] %}
+                    <option value="{{ v }}" {% if v == val %}selected{% endif %}>{{ v }}</option>
+                    {% endfor %}
                 </select>
             </div>
         </div>
 
         <div class="form-row">
             <div class="form-group">
-                <label for="timepris">Avtalt timepris</label>
+                <label for="timepris">Avtalt timepris {{ ai_badge('timepris') }}</label>
                 <input type="number" id="timepris" name="timepris" step="0.01"
+                       value="{{ ai_value('timepris') }}" {{ ai_field('timepris') }}
                        placeholder="F.eks. 1200.00">
             </div>
             <div class="form-group">
-                <label for="maks_timer_per_maaned">Maks timer per maned</label>
+                <label for="maks_timer_per_maaned">Maks timer per måned {{ ai_badge('maks_timer_per_maaned') }}</label>
                 <input type="number" id="maks_timer_per_maaned" name="maks_timer_per_maaned"
+                       value="{{ ai_value('maks_timer_per_maaned') }}" {{ ai_field('maks_timer_per_maaned') }}
                        placeholder="F.eks. 160">
             </div>
         </div>
 
         <div class="form-row">
             <div class="form-group">
-                <label for="sla_responstid_timer">SLA responstid (timer)</label>
+                <label for="sla_responstid_timer">SLA responstid (timer) {{ ai_badge('sla_responstid_timer') }}</label>
                 <input type="number" id="sla_responstid_timer" name="sla_responstid_timer"
+                       value="{{ ai_value('sla_responstid_timer') }}" {{ ai_field('sla_responstid_timer') }}
                        placeholder="F.eks. 4">
             </div>
             <div class="form-group">
-                <label for="avtalt_rabatt_prosent">Avtalt rabatt (%)</label>
+                <label for="avtalt_rabatt_prosent">Avtalt rabatt (%) {{ ai_badge('avtalt_rabatt_prosent') }}</label>
                 <input type="number" id="avtalt_rabatt_prosent" name="avtalt_rabatt_prosent"
-                       step="0.1" placeholder="F.eks. 10">
+                       step="0.1" value="{{ ai_value('avtalt_rabatt_prosent') }}" {{ ai_field('avtalt_rabatt_prosent') }}
+                       placeholder="F.eks. 10">
             </div>
         </div>
 
         <div class="form-row">
             <div class="form-group">
-                <label for="startdato">Startdato</label>
-                <input type="date" id="startdato" name="startdato">
+                <label for="startdato">Startdato {{ ai_badge('startdato') }}</label>
+                <input type="date" id="startdato" name="startdato"
+                       value="{{ ai_value('startdato') }}" {{ ai_field('startdato') }}>
             </div>
             <div class="form-group">
-                <label for="sluttdato">Sluttdato</label>
-                <input type="date" id="sluttdato" name="sluttdato">
+                <label for="sluttdato">Sluttdato {{ ai_badge('sluttdato') }}</label>
+                <input type="date" id="sluttdato" name="sluttdato"
+                       value="{{ ai_value('sluttdato') }}" {{ ai_field('sluttdato') }}>
             </div>
         </div>
 
         <div class="form-group">
-            <label for="beskrivelse">Beskrivelse</label>
-            <textarea id="beskrivelse" name="beskrivelse" rows="3"
-                      placeholder="Kort beskrivelse av kontrakten..."></textarea>
+            <label for="beskrivelse">Beskrivelse {{ ai_badge('beskrivelse') }}</label>
+            <textarea id="beskrivelse" name="beskrivelse" rows="3" {{ ai_field('beskrivelse') }}
+                      placeholder="Kort beskrivelse av kontrakten...">{{ ai_value('beskrivelse') }}</textarea>
         </div>
 
         <div style="display: flex; gap: 1rem; margin-top: 1rem;">

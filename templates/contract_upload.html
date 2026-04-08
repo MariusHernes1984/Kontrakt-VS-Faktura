@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header">
+    <h2>Last opp kontrakt-PDF</h2>
+    <p>AI-en leser kontrakten og fyller ut feltene automatisk. Du får forhåndsvise og justere før lagring.</p>
+</div>
+
+<div class="card">
+    <form method="POST" enctype="multipart/form-data">
+        <div class="form-group">
+            <label for="kontrakt">Kontrakt-PDF *</label>
+            <input type="file" id="kontrakt" name="kontrakt" accept="application/pdf" required>
+            <small style="color: var(--gray-600); display:block; margin-top: 0.5rem;">
+                Skannede PDF-er støttes via OCR (kan ta noen sekunder ekstra).
+            </small>
+        </div>
+
+        <div style="display: flex; gap: 1rem; margin-top: 1rem;">
+            <button type="submit" class="btn btn-primary">Analyser kontrakt</button>
+            <a href="{{ url_for('kontrakter_liste') }}" class="btn" style="background: var(--gray-100);">Avbryt</a>
+        </div>
+    </form>
+</div>
+
+<div class="card" style="margin-top: 1rem; background: var(--gray-50);">
+    <h3 style="margin-top: 0;">Slik fungerer det</h3>
+    <ol>
+        <li>Last opp kontrakt-PDF (tekst eller skannet).</li>
+        <li>AI ekstraherer felter (leverandør, timepris, gyldighetsperiode m.m.).</li>
+        <li>Hvert felt vises med en konfidensindikator (grønn / gul / rød).</li>
+        <li>Du verifiserer / justerer og lagrer kontrakten.</li>
+    </ol>
+</div>
+{% endblock %}

@@ -8,7 +8,11 @@
 </head>
 <body>
     <div class="navbar">
-        <h1>Kontraktskontroll</h1>
+        <a href="{{ url_for('dashboard') }}" class="navbar-brand">
+            <img src="{{ url_for('static', filename='atea-logo.svg') }}" alt="Atea" class="navbar-logo">
+            <span class="navbar-divider"></span>
+            <h1>Kontraktskontroll</h1>
+        </a>
         <nav>
             <a href="{{ url_for('dashboard') }}" class="{% if request.endpoint == 'dashboard' %}active{% endif %}">Dashboard</a>
             <a href="{{ url_for('last_opp_faktura') }}" class="{% if request.endpoint == 'last_opp_faktura' %}active{% endif %}">Last opp faktura</a>

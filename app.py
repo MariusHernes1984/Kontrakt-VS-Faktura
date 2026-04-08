@@ -10,9 +10,10 @@ from database import (
     slett_kontrakt, lagre_faktura_logg, hent_faktura_logg, hent_faktura,
     slett_faktura, opprett_varslingsmottaker, hent_alle_varslingsmottakere,
     hent_varslingsmottakere_for_leverandor, oppdater_varslingsmottaker,
-    slett_varslingsmottaker
+    slett_varslingsmottaker, oppdater_kontrakt_fil, get_db
 )
-from analyzer import analyser_faktura
+from analyzer import analyser_faktura, analyser_kontrakt_tekst
+from pdf_extractor import ekstraher_tekst as ekstraher_pdf_tekst
 from validator import finn_og_valider
 from report_generator import generer_avviksrapport
 from email_client import send_avviksvarsling
@@ -76,10 +77,104 @@ def ny_kontrakt():
             "kontakt_person": request.form.get("kontakt_person", ""),
             "kontakt_epost": request.form.get("kontakt_epost", ""),
         }
-        opprett_kontrakt(data)
+
+        # Advar ved duplikat kontraktsnummer (men blokker ikke)
+        if data["kontrakt_nummer"]:
+            conn = get_db()
+            eksisterer = conn.execute(
+                "SELECT id FROM kontrakter WHERE kontrakt_nummer = ?",
+                (data["kontrakt_nummer"],),
+            ).fetchone()
+            conn.close()
+            if eksisterer:
+                flash(
+                    f"Advarsel: Kontraktsnummer {data['kontrakt_nummer']} finnes allerede.",
+                    "warning",
+                )
+
+        kontrakt_id = opprett_kontrakt(data)
+
+        # Hvis vi har en pending opplastet PDF (fra last-opp-flyten), koble den til
+        pending_pdf = request.form.get("pending_pdf", "").strip()
+        if pending_pdf:
+            oppdater_kontrakt_fil(kontrakt_id, pending_pdf)
+
         flash("Kontrakt opprettet!", "success")
         return redirect(url_for("kontrakter_liste"))
     return render_template("contract_form.html")
+
+
+@app.route("/kontrakter/last-opp", methods=["GET", "POST"])
+def last_opp_kontrakt():
+    if request.method == "POST":
+        if "kontrakt" not in request.files:
+            flash("Ingen fil valgt.", "error")
+            return redirect(request.url)
+
+        fil = request.files["kontrakt"]
+        if fil.filename == "":
+            flash("Ingen fil valgt.", "error")
+            return redirect(request.url)
+
+        if not allowed_file(fil.filename):
+            flash("Kun PDF-filer er tillatt.", "error")
+            return redirect(request.url)
+
+        filnavn = secure_filename(fil.filename)
+        filbane = os.path.join(CONTRACTS_FOLDER, filnavn)
+        fil.save(filbane)
+
+        # Steg 1: ekstraher tekst (med OCR-fallback)
+        tekst, brukte_ocr = ekstraher_pdf_tekst(filbane)
+        if not tekst:
+            flash(
+                "Kunne ikke lese tekst fra PDF-en (verken via PyPDF2 eller OCR).",
+                "error",
+            )
+            return redirect(request.url)
+
+        # Steg 2: AI-analyse
+        resultat = analyser_kontrakt_tekst(tekst)
+        if "feil" in resultat:
+            flash(f"AI-analyse feilet: {resultat['feil']}", "error")
+            return redirect(request.url)
+
+        if not resultat.get("er_kontrakt", True):
+            flash(
+                "Dokumentet ser ikke ut som en kontrakt. Sjekk filen og prøv igjen.",
+                "error",
+            )
+            return redirect(request.url)
+
+        felter = resultat.get("felter", {})
+        advarsler = resultat.get("advarsler", [])
+
+        if brukte_ocr:
+            advarsler = ["Tekst hentet via OCR — verifiser nøye."] + advarsler
+
+        # Sjekk duplikat-kontraktsnummer
+        kontrakt_nummer = (felter.get("kontrakt_nummer") or {}).get("verdi")
+        if kontrakt_nummer:
+            conn = get_db()
+            eksisterer = conn.execute(
+                "SELECT id FROM kontrakter WHERE kontrakt_nummer = ?",
+                (kontrakt_nummer,),
+            ).fetchone()
+            conn.close()
+            if eksisterer:
+                advarsler.append(
+                    f"Kontraktsnummer {kontrakt_nummer} finnes allerede i databasen."
+                )
+
+        return render_template(
+            "contract_form.html",
+            felter=felter,
+            advarsler=advarsler,
+            brukte_ocr=brukte_ocr,
+            pending_pdf=filnavn,
+        )
+
+    return render_template("contract_upload.html")
 
 
 @app.route("/kontrakter/<int:kontrakt_id>/slett", methods=["POST"])
@@ -291,6 +386,25 @@ def slett_varslingsmottaker_route(mottaker_id):
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(CONTRACTS_FOLDER, exist_ok=True)
 init_db()
+
+
+def _auto_seed_hvis_tom():
+    """Populerer database + PDF-er hvis databasen er tom (f.eks. etter redeploy)."""
+    try:
+        if hent_alle_kontrakter():
+            return
+        print("Database er tom — kjører auto-seed...")
+        import seed_data, seed_extra, generate_contracts, generate_invoices
+        seed_data.seed()
+        seed_extra.seed()
+        generate_contracts.generer_alle()
+        generate_invoices.generer_alle()
+        print("Auto-seed ferdig.")
+    except Exception as e:
+        print(f"Auto-seed feilet: {e}")
+
+
+_auto_seed_hvis_tom()
 
 if __name__ == "__main__":
     app.run(debug=os.getenv("FLASK_DEBUG", "0") == "1", port=5000)

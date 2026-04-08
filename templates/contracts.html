@@ -5,7 +5,10 @@
         <h2>Kontrakter</h2>
         <p>Administrer leverandorkontrakter</p>
     </div>
-    <a href="{{ url_for('ny_kontrakt') }}" class="btn btn-primary">+ Ny kontrakt</a>
+    <div style="display: flex; gap: 0.5rem;">
+        <a href="{{ url_for('last_opp_kontrakt') }}" class="btn btn-primary">📄 Last opp kontrakt-PDF</a>
+        <a href="{{ url_for('ny_kontrakt') }}" class="btn" style="background: var(--gray-100);">+ Ny kontrakt (manuelt)</a>
+    </div>
 </div>
 
 <div class="card">
