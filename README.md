@@ -148,7 +148,7 @@ flask --app app run
 # Åpne http://127.0.0.1:5000
 ```
 
-Databasen (`kontrakter.db`) opprettes automatisk ved første oppstart.
+Databasen (`kontrakter.db`) opprettes og populeres automatisk med demodata ved første oppstart (13 kontrakter, 48 fakturaer).
 
 ### Demoflyt (forslag)
 1. **AI-utfylling av kontrakt:** Gå til Kontrakter → Last opp PDF → bruk en av demo-kontraktene i `demo_kontrakter/` → sjekk konfidensscorer og lagre.
@@ -186,6 +186,9 @@ Databasen (`kontrakter.db`) opprettes automatisk ved første oppstart.
 ```
 
 ---
+
+## Anonymisering
+Alle leverandørnavn i demodata er anonymisert til **Leverandør 1–12 AS**. Ingen reelle selskapsnavn brukes i seed-data eller genererte PDF-er.
 
 ## Status
 Dette er en **Proof of Concept** laget for intern demo. Ikke ment for produksjon uten ytterligere sikkerhets-, skalerings- og feilhåndteringstiltak.

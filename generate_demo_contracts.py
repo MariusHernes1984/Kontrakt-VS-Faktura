@@ -69,16 +69,16 @@ def generer_komplett():
 
     h1(pdf, "KONSULENTAVTALE")
     para(pdf,
-        "Denne avtalen er inngått mellom Atea Norge AS (heretter Kunden) og "
-        "Nordic Consulting Group AS, org.nr. 918 472 103 (heretter Leverandøren), "
+        "Denne avtalen er inngått mellom Kunde AS (heretter Kunden) og "
+        "Leverandor 11 AS, org.nr. 918 472 103 (heretter Leverandøren), "
         "og regulerer levering av IT-konsulenttjenester under prosjekt PRJ-2026-NCG.")
     pdf.ln(2)
 
     h2(pdf, "1. Partene")
-    kv(pdf, "Leverandør", "Nordic Consulting Group AS")
+    kv(pdf, "Leverandør", "Leverandor 11 AS")
     kv(pdf, "Organisasjonsnummer", "918 472 103")
     kv(pdf, "Adresse", "Drammensveien 145, 0277 Oslo")
-    kv(pdf, "Kontaktperson", "Ingrid Solheim")
+    kv(pdf, "Kontaktperson", "Kontaktperson A")
     pdf.ln(2)
 
     h2(pdf, "2. Kontraktsopplysninger")
@@ -135,12 +135,12 @@ def generer_mangelfull():
 
     h1(pdf, "RAMMEAVTALE FOR KONSULENTTJENESTER")
     para(pdf,
-        "Denne rammeavtalen inngås mellom Atea Norge AS og Fjordland IT Partner "
+        "Denne rammeavtalen inngås mellom Kunde AS og Leverandor 12 AS "
         "og regulerer løpende levering av IT-tjenester i henhold til behov.")
     pdf.ln(2)
 
     h2(pdf, "1. Partene")
-    kv(pdf, "Leverandør", "Fjordland IT Partner")
+    kv(pdf, "Leverandør", "Leverandor 12 AS")
     kv(pdf, "Adresse", "Strandgaten 22, 5004 Bergen")
     # Bevisst mangler: kontraktsnummer, prosjekt-ID, org.nr
     pdf.ln(2)
@@ -176,7 +176,7 @@ def generer_mangelfull():
 
     h2(pdf, "5. Beskrivelse")
     para(pdf,
-        "Fjordland IT Partner skal bistå Kunden med generelle IT-oppgaver, "
+        "Leverandor 12 AS skal bistå Kunden med generelle IT-oppgaver, "
         "herunder support, rådgivning og mindre utviklingsoppdrag.")
 
     pdf.ln(6)

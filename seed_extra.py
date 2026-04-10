@@ -3,7 +3,7 @@ from database import init_db, opprett_kontrakt
 
 NYE_KONTRAKTER = [
     {
-        "leverandor_navn": "Bouvet ASA",
+        "leverandor_navn": "Leverandor 4 AS",
         "prosjekt_id": "PRJ-BOUV-301",
         "kontrakt_nummer": "K-2025-101",
         "timepris": 1350.00,
@@ -16,7 +16,7 @@ NYE_KONTRAKTER = [
         "beskrivelse": "Systemutvikling Java/.NET for kjernesystemer.",
     },
     {
-        "leverandor_navn": "Bouvet ASA",
+        "leverandor_navn": "Leverandor 4 AS",
         "prosjekt_id": "PRJ-BOUV-302",
         "kontrakt_nummer": "K-2025-102",
         "timepris": 1200.00,
@@ -29,7 +29,7 @@ NYE_KONTRAKTER = [
         "beskrivelse": "Testledelse og kvalitetssikring.",
     },
     {
-        "leverandor_navn": "Sopra Steria AS",
+        "leverandor_navn": "Leverandor 5 AS",
         "prosjekt_id": "PRJ-SOPRA-010",
         "kontrakt_nummer": "K-2024-201",
         "timepris": 1500.00,
@@ -42,7 +42,7 @@ NYE_KONTRAKTER = [
         "beskrivelse": "Rammeavtale skymigrering og infrastruktur Azure.",
     },
     {
-        "leverandor_navn": "Capgemini Norge AS",
+        "leverandor_navn": "Leverandor 6 AS",
         "prosjekt_id": "PRJ-CAP-055",
         "kontrakt_nummer": "K-2024-301",
         "timepris": 1400.00,
@@ -55,7 +55,7 @@ NYE_KONTRAKTER = [
         "beskrivelse": "SAP-konsulenttjenester, moduler FI/CO og MM.",
     },
     {
-        "leverandor_navn": "Capgemini Norge AS",
+        "leverandor_navn": "Leverandor 6 AS",
         "prosjekt_id": "PRJ-CAP-060",
         "kontrakt_nummer": "K-2025-302",
         "timepris": 1550.00,
@@ -68,7 +68,7 @@ NYE_KONTRAKTER = [
         "beskrivelse": "AI/ML-radgivning og modellutvikling.",
     },
     {
-        "leverandor_navn": "Knowit AS",
+        "leverandor_navn": "Leverandor 7 AS",
         "prosjekt_id": "PRJ-KNO-200",
         "kontrakt_nummer": "K-2024-401",
         "timepris": 1300.00,
@@ -81,7 +81,7 @@ NYE_KONTRAKTER = [
         "beskrivelse": "Frontend-utvikling React/TypeScript, designsystem.",
     },
     {
-        "leverandor_navn": "Accenture Norway AS",
+        "leverandor_navn": "Leverandor 8 AS",
         "prosjekt_id": "PRJ-ACC-777",
         "kontrakt_nummer": "K-2025-501",
         "timepris": 1750.00,
@@ -94,7 +94,7 @@ NYE_KONTRAKTER = [
         "beskrivelse": "Strategisk IT-radgivning og virksomhetsarkitektur.",
     },
     {
-        "leverandor_navn": "Visma Consulting AS",
+        "leverandor_navn": "Leverandor 9 AS",
         "prosjekt_id": "PRJ-VIS-090",
         "kontrakt_nummer": "K-2024-601",
         "timepris": 1150.00,
@@ -107,7 +107,7 @@ NYE_KONTRAKTER = [
         "beskrivelse": "Drift og forvaltning av fagsystemer, 2. og 3. linje support.",
     },
     {
-        "leverandor_navn": "Visma Consulting AS",
+        "leverandor_navn": "Leverandor 9 AS",
         "prosjekt_id": "PRJ-VIS-091",
         "kontrakt_nummer": "K-2025-602",
         "timepris": 1250.00,
@@ -120,7 +120,7 @@ NYE_KONTRAKTER = [
         "beskrivelse": "Integrasjonsplattform og API-utvikling.",
     },
     {
-        "leverandor_navn": "Itera ASA",
+        "leverandor_navn": "Leverandor 10 AS",
         "prosjekt_id": "PRJ-ITE-150",
         "kontrakt_nummer": "K-2025-701",
         "timepris": 1280.00,

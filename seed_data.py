@@ -3,7 +3,7 @@ from database import init_db, opprett_kontrakt
 
 EKSEMPEL_KONTRAKTER = [
     {
-        "leverandor_navn": "Nordic Consulting AS",
+        "leverandor_navn": "Leverandor 1 AS",
         "prosjekt_id": "PRJ-2024-001",
         "kontrakt_nummer": "K-2024-001",
         "timepris": 1250.00,
@@ -16,7 +16,7 @@ EKSEMPEL_KONTRAKTER = [
         "beskrivelse": "Rammeavtale for IT-konsulenttjenester, systemutvikling og drift.",
     },
     {
-        "leverandor_navn": "TechPartner Norge AS",
+        "leverandor_navn": "Leverandor 2 AS",
         "prosjekt_id": "PRJ-2024-042",
         "kontrakt_nummer": "K-2024-015",
         "timepris": 1450.00,
@@ -29,7 +29,7 @@ EKSEMPEL_KONTRAKTER = [
         "beskrivelse": "Spesialistkonsulenter for skymigrering og DevOps.",
     },
     {
-        "leverandor_navn": "DataSikkerhet AS",
+        "leverandor_navn": "Leverandor 3 AS",
         "prosjekt_id": "PRJ-SEC-100",
         "kontrakt_nummer": "K-2023-088",
         "timepris": 1600.00,
